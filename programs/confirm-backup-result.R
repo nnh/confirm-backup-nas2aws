@@ -20,15 +20,20 @@ CompareAwsNas <- function(kConstName){
       str_split('\\s', n=2)
     return(temp[[1]])
   }) %>% as.data.frame() %>% transpose()
+  targetFolderName <- kConstName %>% str_replace('^[0-9]{6}_', '')
   nas <- raw_nas %>% map(~{
     temp <- .
-    temp <- temp %>% str_replace('^/share/Projects', '') %>% str_split('\t')
+    temp <- temp %>% str_replace(str_c('^/share/', targetFolderName), '') %>% str_split('\t')
     return(c(temp[[1]][2], temp[[1]][1]))
   }) %>% as.data.frame() %>% transpose()
   aws <- aws %>% filter(V1 > 0) %>% arrange(V1, V2)
-  nas <- nas %>% filter(V1 > 0) %>% filter(!str_detect(V2, '/@Recycle')) %>% filter(!str_detect(V2, '.DS_Store')) %>% filter(!str_detect(V2, '/.streams')) %>% filter(!str_detect(V2, '.lnk')) %>% arrange(V1, V2)
+  nas <- nas %>% filter(V1 > 0) %>% filter(!str_detect(V2, '/@Recycle')) %>% filter(!str_detect(V2, '.DS_Store')) %>%
+    filter(!str_detect(V2, '/.streams')) %>% filter(!str_detect(V2, '.lnk')) %>% filter(!str_detect(V2, '.fcpcache')) %>%
+      filter(!str_detect(V2, '\\/\\..*$')) %>% filter(!str_detect(V2, '@__thumb')) %>% arrange(V1, V2)
   diff_list <- NULL
   none_list <- NULL
+  print(str_c('#', kConstName, ' check start #'))
+  print(str_c('file count nas: ', nrow(nas), ' aws: ', nrow(aws)))
   for(i in 1:nrow(nas)){
     temp <- aws %>% filter(V2 == nas[i, 'V2'])
     if (nrow(temp) > 0){
@@ -39,12 +44,12 @@ CompareAwsNas <- function(kConstName){
       none_list <- c(none_list, nas[i, 'V2'])
     }
   }
-  print(str_c('#', kConstName, ' check start #'))
   print('*** Files of different sizes ***')
   print(diff_list)
   print('*** Files that do not exist in aws ***')
   print(none_list)
   print(str_c('#', kConstName, ' check end #'))
+  return(list(diff_list, none_list))
 }
 #' @title GetTodayYyyymm
 #' Returns today's year and month in YYYYMM.
@@ -57,6 +62,6 @@ GetTodayYyyymm <- function(){
   return(yyyymm)
 }
 # ------ constants ------
-kTargetFolders <- c('Projects')
+kTargetFolders <- c('Projects', 'References', 'Stat')
 # ------ main ------
-str_c(GetTodayYyyymm(), '_', kTargetFolders) %>% map(~CompareAwsNas(.))
+error_list <- str_c(GetTodayYyyymm(), '_', kTargetFolders) %>% map(~CompareAwsNas(.))
