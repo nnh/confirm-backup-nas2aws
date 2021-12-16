@@ -5,14 +5,15 @@ rm(list=ls())
 # ------ libraries ------
 library(tidyverse)
 library(data.table)
+library(here)
 # ------ functions ------
 #' @title CompareAwsNas
 #' Compare the contents of the file list.
 #' @param kConstName Part of the file name to be compared.
 #' @return error list.
 CompareAwsNas <- function(kConstName){
-  raw_aws <- read_lines(str_c('~/Downloads/', kConstName, '_aws.txt'))
-  raw_nas <- read_lines(str_c('~/Downloads/', kConstName, '_nas.txt'))
+  raw_aws <- read_lines(str_c(kConstName, '_aws.txt'))
+  raw_nas <- read_lines(str_c(kConstName, '_nas.txt'))
   aws <- raw_aws %>% map(~{
     temp <- .
     temp <- temp %>% str_replace('^[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}\\s+', '') %>%
@@ -77,6 +78,9 @@ GetTodayYyyymm <- function(){
 }
 # ------ constants ------
 kTargetFolders <- c('Projects', 'References', 'Stat', 'Archives', 'BoxBackups', 'backups')
+# ------ set working dir ------
+here() %>% setwd()
+'../' %>% setwd()
 # ------ main ------
 error_list <- str_c(GetTodayYyyymm(), '_', kTargetFolders) %>% map(~CompareAwsNas(.))
-save(error_list, file='~/Downloads/nas2awsbackup_errorlist.Rda')
+save(error_list, file='nas2awsbackup_errorlist.Rda')
