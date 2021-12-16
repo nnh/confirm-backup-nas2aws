@@ -1,6 +1,6 @@
 #' @file confirm-backup-result.R
 #' @author Mariko Ohtsuka
-#' @date 2021.12.13
+#' @date 2021.12.16
 rm(list=ls())
 # ------ libraries ------
 library(tidyverse)
@@ -9,7 +9,7 @@ library(data.table)
 #' @title CompareAwsNas
 #' Compare the contents of the file list.
 #' @param kConstName Part of the file name to be compared.
-#' @return none.
+#' @return error list.
 CompareAwsNas <- function(kConstName){
   raw_aws <- read_lines(str_c('~/Downloads/', kConstName, '_aws.txt'))
   raw_nas <- read_lines(str_c('~/Downloads/', kConstName, '_nas.txt'))
@@ -26,30 +26,44 @@ CompareAwsNas <- function(kConstName){
     temp <- temp %>% str_replace(str_c('^/share/', targetFolderName), '') %>% str_split('\t')
     return(c(temp[[1]][2], temp[[1]][1]))
   }) %>% as.data.frame() %>% transpose()
-  aws <- aws %>% filter(V1 > 0) %>% arrange(V1, V2)
-  nas <- nas %>% filter(V1 > 0) %>% filter(!str_detect(V2, '/@Recycle')) %>% filter(!str_detect(V2, '.DS_Store')) %>%
-    filter(!str_detect(V2, '/.streams')) %>% filter(!str_detect(V2, '.lnk')) %>% filter(!str_detect(V2, '.fcpcache')) %>%
-      filter(!str_detect(V2, '\\/\\..*$')) %>% filter(!str_detect(V2, '@__thumb')) %>% arrange(V1, V2)
-  diff_list <- NULL
-  none_list <- NULL
+  aws <- FilterDf(aws)
+  nas <- FilterDf(nas)
   print(str_c('#', kConstName, ' check start #'))
   print(str_c('file count nas: ', nrow(nas), ' aws: ', nrow(aws)))
-  for(i in 1:nrow(nas)){
-    temp <- aws %>% filter(V2 == nas[i, 'V2'])
-    if (nrow(temp) > 0){
-      if (nas[i, 'V1'] != temp[1, 'V1']){
-        diff_list <- c(diff_list, nas[i, 'V2'])
-      }
-    } else {
-      none_list <- c(none_list, nas[i, 'V2'])
+  nas_only <- anti_join(nas, aws, by='V2')
+  aws_only <- anti_join(aws, nas, by='V2')
+  temp_nas <- anti_join(nas, nas_only, by='V2')
+  temp_aws <- anti_join(aws, aws_only, by='V2')
+  diff_list <- anti_join(temp_nas, temp_aws, by=c('V2', 'V1'))
+  if (nrow(nas_only) > 0 | nrow(aws_only) > 0 | nrow(diff_list) > 0){
+    if (nrow(diff_list) > 0){
+      print('*** Files of different sizes ***')
+      print(diff_list)
     }
+    if (nrow(nas_only) > 0){
+      print('*** Files that do not exist in aws ***')
+      temp <- inner_join(nas, nas_only, by='V2')
+      print(temp)
+    }
+    if (nrow(aws_only) > 0){
+      print('*** Files that do not exist in nas ***')
+      print(aws_only)
+    }
+  } else {
+    print('No difference.')
   }
-  print('*** Files of different sizes ***')
-  print(diff_list)
-  print('*** Files that do not exist in aws ***')
-  print(none_list)
   print(str_c('#', kConstName, ' check end #'))
-  return(list(diff_list, none_list))
+  return(list(kConstName, nas_only, aws_only, diff_list))
+}
+#' @title FilterDf
+#'
+#' @param input_df The data frame to be processed.
+#' @return a data frame.
+FilterDf <- function(input_df){
+  output_df <- input_df %>% filter(V1 > 0) %>% filter(!str_detect(V2, '/@Recycle')) %>% filter(!str_detect(V2, '.DS_Store')) %>%
+    filter(!str_detect(V2, '/.streams')) %>% filter(!str_detect(V2, '.lnk')) %>% filter(!str_detect(V2, '.fcpcache')) %>%
+      filter(!str_detect(V2, '\\/\\..*$')) %>% filter(!str_detect(V2, '@__thumb')) %>% arrange(V1, V2)
+  return(output_df)
 }
 #' @title GetTodayYyyymm
 #' Returns today's year and month in YYYYMM.
@@ -62,6 +76,7 @@ GetTodayYyyymm <- function(){
   return(yyyymm)
 }
 # ------ constants ------
-kTargetFolders <- c('Projects', 'References', 'Stat')
+kTargetFolders <- c('Projects', 'References', 'Stat', 'Archives', 'BoxBackups', 'backups')
 # ------ main ------
 error_list <- str_c(GetTodayYyyymm(), '_', kTargetFolders) %>% map(~CompareAwsNas(.))
+save(error_list, file='~/Downloads/nas2awsbackup_errorlist.Rda')
