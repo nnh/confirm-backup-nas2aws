@@ -4,7 +4,8 @@ ARONAS->AWSへのバックアップ処理後の確認作業に使用するスク
 ## 使用手順
 ※/ARONAS/Archives/ISR/SystemAssistant/yearlyOperations/nas2awsBackup/にこのリポジトリをクローンした場合の例です。 
 ### NASのファイルリストを取得する
-- listOutput.shをテキストエディタで開き、実行したいスクリプトの行の頭の'#'を消して保存してください。
+- listOutput.shをテキストエディタで開き、実行したいスクリプトの行の頭の'#'を消して保存してください。  
+注意！　backupsはフォルダサイズが膨大なのでNASへのアクセスに影響が出る可能性があります。backupsに対しては処理を行わないでください。  
 - mac OSのターミナルを起動し、下記のコマンドを実行してください。/ARONAS/Archives/ISR/SystemAssistant/yearlyOperations/nas2awsBackupに結果のファイルが出力されます。
 ```
 ssh NASのユーザー名@NASのIPアドレス
