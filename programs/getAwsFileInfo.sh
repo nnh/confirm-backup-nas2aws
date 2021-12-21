@@ -8,4 +8,3 @@ str_ym=${str_year}${str_month}
 #aws s3 ls s3://aronas-backup/${str_ym}_Stat/ --recursive > ~/Downloads/${str_ym}_Stat_aws.txt
 #aws s3 ls s3://aronas-backup/${str_ym}_Archives/ --recursive > ~/Downloads/${str_ym}_Archives_aws.txt
 #aws s3 ls s3://aronas-backup/${str_ym}_BoxBackups/ --recursive > ~/Downloads/${str_ym}_BoxBackups_aws.txt
-#aws s3 ls s3://aronas-backup/${str_ym}_backups/ --recursive > ~/Downloads/${str_ym}_backups_aws.txt
