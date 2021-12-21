@@ -8,4 +8,3 @@ str_ym=${str_year}${str_month}
 #./find.py /share/Stat/ > ../../${str_ym}_Stat_nas.txt
 #./find.py /share/Archives/ > ../../${str_ym}_Archives_nas.txt
 #./find.py /share/BoxBackups/ > ../../${str_ym}_BoxBackups_nas.txt
-#./find.py /share/backups/ > ../../${str_ym}_backups_nas.txt
